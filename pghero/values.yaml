@@ -1,0 +1,103 @@
+# Default values for my-web-page-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ankane
+  name: pghero
+  pullPolicy: IfNotPresent
+  # override the image tag
+  tag: v3.7.0
+
+secretName: pghero
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Should we create a new SA?
+  create: false
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Name of the SA to create or create-and-use.
+  name: ""
+  # Annotations to add to the service account
+  annotations: {}
+
+# K8s Annotations on the pod.
+podAnnotations: {}
+# K8s Labels on the pod.
+podLabels: {}
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+
+# https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+# https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not specifying default resources and to leave this as a conscious choice
+  # for the user. This also increases the chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 258Mi
+
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
