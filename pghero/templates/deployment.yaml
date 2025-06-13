@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pghero.fullname" . }}
+  labels:
+    {{- include "pghero.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "pghero.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "pghero.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pghero.serviceAccountName" . }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{ toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- if .Values.securityContext }}
+          securityContext:
+            {{ toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: DATABASE_URL
+          {{- if .Values.secretName }}
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.secretName }}"
+                key: "database_url"
+          {{- else }}
+            value: "postgres://{{ .Values.database.user }}:{{ .Values.database.password }}@{{ .Values.database.url }}:{{ .Values.database.port }}/{{ .Values.database.dbName }}"
+          {{- end }}
+          - name: PGHERO_USERNAME
+          {{- if .Values.secretName }}
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.secretName }}"
+                key: "username"
+          {{- else }}
+            value: "{{ .Values.pgheroUser }}"
+          {{- end }}
+          - name: PGHERO_PASSWORD
+          {{- if .Values.secretName }}
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Values.secretName }}"
+                key: "password"
+          {{- else }}
+            value: "{{ .Values.pgheroPassword }}"
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: {{ include "pghero.name" . }}-configmap
+              mountPath: /app/config/pghero.yml
+              readOnly: true
+              subPath: pghero.yml
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+      - name: {{ include "pghero.name" . }}-configmap
+        configMap:
+          name: {{ include "pghero.name" . }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
