@@ -1,4 +1,4 @@
-target-branch: main
+target-branch: trunk
 chart-dirs:
   - ./
 helm-extra-args: --timeout 600s
